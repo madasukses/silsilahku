@@ -89,7 +89,6 @@ function openBio(person) {
     ['Pekerjaan',    p.job || '—'],
     ['Alamat',       p.address || '—'],
     deathFull ? ['Tanggal Wafat', deathFull] : null,
-    ['Keluarga',     p.family_id ? 'Keluarga Soehardjo' : '(Dari luar keluarga)'],
     ['Status',       p.is_deceased
       ? '<span style="color:var(--rose)">Almarhum/Almarhumah</span>'
       : '<span style="color:var(--green)">Masih hidup</span>'],
@@ -99,11 +98,12 @@ function openBio(person) {
     `<div class="bio-row"><span class="rl">${l}</span><span class="rv">${v}</span></div>`
   ).join('');
 
-  // Relatives
+  // Relatives — include semua: ayah, ibu, pasangan (termasuk menantu), anak
   const rels = [];
   if (father) rels.push({ p: father, role: 'Ayah' });
   if (mother) rels.push({ p: mother, role: 'Ibu' });
-  if (spouse) rels.push({ p: spouse, role: 'Pasangan' });
+  if (spouse) rels.push({ p: spouse, role: p.gender === 'female' ? 'Suami' : 'Istri' });
+  // Anak kandung (bukan menantu)
   ALL_MEMBERS.filter(m =>
     (m.father_id === p.id || m.mother_id === p.id) && !m.is_inlaw
   ).forEach(c => rels.push({ p: c, role: 'Anak' }));

@@ -104,13 +104,17 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
   const block = document.createElement('div');
   block.className = 'family-block';
 
-  // Couple row
+  // Couple row — spouse selalu tampil (termasuk menantu)
   const coupleRow = document.createElement('div');
   coupleRow.className = 'couple-row';
   coupleRow.appendChild(makeNode(person, onClickFn));
 
-  const spouse = person.spouse_id ? members.find(m => m.id === person.spouse_id) : null;
-  if (spouse) {
+  // Cari pasangan: dari spouse_id person, atau dari members yang spouse_id-nya = person.id
+  let spouse = person.spouse_id
+    ? members.find(m => m.id === person.spouse_id)
+    : members.find(m => m.spouse_id === person.id);
+
+  if (spouse && !drawn.has(spouse.id)) {
     drawn.add(spouse.id);
     const heart = document.createElement('div');
     heart.className = 'heart-sep';
@@ -184,8 +188,10 @@ async function renderTree(containerId, onClickFn) {
   container.innerHTML = '';
   const drawn = new Set();
 
-  // Find root ancestors: no father, no mother, not inlaw
-  const roots = ALL_MEMBERS.filter(p => !p.is_inlaw && !p.father_id && !p.mother_id);
+  // Root = tidak punya ayah/ibu, dan bukan menantu
+  const roots = ALL_MEMBERS.filter(p =>
+    !p.is_inlaw && !p.father_id && !p.mother_id
+  );
 
   roots.forEach(rp => {
     if (drawn.has(rp.id)) return;
