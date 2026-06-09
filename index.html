@@ -134,7 +134,7 @@ function showToast(msg) {
 }
 
 async function loadSettings() {
-  const { data } = await supabase.from('settings').select('*');
+  const { data } = await _db.from('settings').select('*');
   if (!data) return {};
   return Object.fromEntries(data.map(r => [r.key, r.value]));
 }
