@@ -138,7 +138,7 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
 
   if (children.length === 0) return block;
 
-  // Connector down
+  // Connector vertikal turun — langsung dari bawah avatar ke h-bar
   const vConn = document.createElement('div');
   vConn.className = 'v-conn';
   block.appendChild(vConn);
@@ -161,6 +161,7 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
     col.className = 'child-col';
     const drop = document.createElement('div');
     drop.className = 'child-drop';
+    // Tidak ada margin — langsung menempel ke avatar
     col.appendChild(drop);
     const childBlock = buildFamilyBlock(child, drawn, members, onClickFn);
     if (childBlock) col.appendChild(childBlock);
