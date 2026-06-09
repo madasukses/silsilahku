@@ -24,7 +24,7 @@ function openBio(person) {
   // Name & meta
   document.getElementById('bioName').textContent = p.name;
   const birth = p.birth_date ? new Date(p.birth_date).getFullYear() : '';
-  const death = p.is_deceased && p.death_date ? ' · † ' + new Date(p.death_date).getFullYear() : '';
+  const death = p.is_deceased && p.death_date ? ' · - ' + new Date(p.death_date).getFullYear() : '';
   const city = p.birth_city || '';
   document.getElementById('bioMeta').innerHTML =
     (birth ? 'b. ' + birth : '') + death + (city ? ' · ' + city : '');

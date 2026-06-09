@@ -67,7 +67,7 @@ function makeNode(p, onClickFn) {
   nd.appendChild(nameEl);
 
   const birth = p.birth_date ? new Date(p.birth_date).getFullYear() : '';
-  const death = p.is_deceased && p.death_date ? '†' + new Date(p.death_date).getFullYear() : '';
+  const death = p.is_deceased && p.death_date ? '- ' + new Date(p.death_date).getFullYear() : '';
   if (birth || death) {
     const yr = document.createElement('div');
     yr.className = 'node-year';
