@@ -24,7 +24,7 @@
   width: 36px; height: 4px; background: var(--parch);
   border-radius: 2px; margin: 12px auto 0;
 }
-.sheet-close {
+.sheet-close { display: none !important; /* removed */ } .sheet-close-OLD {
   position: absolute; top: 14px; right: 14px;
   width: 30px; height: 30px; border-radius: 50%;
   background: var(--parch); border: none; cursor: pointer;
