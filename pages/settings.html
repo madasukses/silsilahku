@@ -134,7 +134,7 @@ async function loadSettings() {
 }
 
 async function upsertSetting(key, value) {
-  const { error } = await supabase
+  const { error } = await window._db
     .from('settings')
     .upsert({ key, value }, { onConflict: 'key' });
   if (error) console.error('Settings error:', key, error);
