@@ -33,7 +33,7 @@
   .error-msg {
     background: rgba(196,84,110,0.1); border: 1px solid rgba(196,84,110,0.3);
     color: var(--rose); border-radius: 9px; padding: 10px 13px;
-    font-size: 13px; margin-bottom: 14px; display: none;
+    font-size: 13px; margin-bottom: 14px; display: none; line-height: 1.5;
   }
   .error-msg.show { display: block; }
   .login-btn {
@@ -47,6 +47,20 @@
   }
   .login-btn:hover { background: var(--sepia); color: var(--ink); }
   .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Panduan buat user */
+  .guide-box {
+    background: rgba(191,154,88,0.08);
+    border: 1px solid rgba(191,154,88,0.2);
+    border-radius: 10px; padding: 14px 16px;
+    margin-top: 20px; font-size: 12px; color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .guide-box strong { color: var(--sepia-dk); display: block; margin-bottom: 4px; }
+  .guide-box code {
+    background: var(--parch); padding: 1px 6px; border-radius: 4px;
+    font-size: 12px; color: var(--ink);
+  }
 </style>
 </head>
 <body>
@@ -59,11 +73,11 @@
   <div class="login-body">
     <h2>Masuk ke Admin</h2>
 
-    <div class="error-msg" id="errMsg">Email atau password salah.</div>
+    <div class="error-msg" id="errMsg"></div>
 
     <div class="fg" style="margin-bottom:14px;">
       <label>Email</label>
-      <input type="email" id="emailInput" placeholder="admin@silsilahku.id" autocomplete="email">
+      <input type="email" id="emailInput" placeholder="admin@silsilahku.id" autocomplete="email" value="admin@silsilahku.id">
     </div>
     <div class="fg" style="margin-bottom:6px;">
       <label>Password</label>
@@ -71,26 +85,35 @@
     </div>
 
     <button class="login-btn" id="loginBtn" onclick="doLogin()">
-      <span id="loginBtnText">Masuk</span>
-      <span id="loginSpinner" class="spinner" style="display:none;width:16px;height:16px;"></span>
+      <span id="loginBtnText">Masuk →</span>
+      <span id="loginSpinner" class="spinner" style="display:none;width:16px;height:16px;border-width:2px;"></span>
     </button>
 
     <div class="login-hint">Hanya admin keluarga yang dapat mengubah data</div>
-    <div style="text-align:center;margin-top:12px;">
+
+    <div class="guide-box">
+      <strong>⚠️ Belum bisa login? Buat user admin dulu:</strong>
+      1. Buka <b>supabase.com</b> → project Anda<br>
+      2. Menu <b>Authentication → Users → Add User</b><br>
+      3. Email: <code>admin@silsilahku.id</code><br>
+      4. Password: <code>admin123</code><br>
+      5. Centang <b>Auto Confirm User</b><br>
+      6. Klik <b>Create User</b>
+    </div>
+
+    <div style="text-align:center;margin-top:14px;">
       <a href="../index.html" style="font-size:12px;color:var(--muted);">← Kembali ke Dashboard</a>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/config.js"></script>
 <script>
 async function doLogin() {
-  const email = document.getElementById('emailInput').value.trim();
-  const pw    = document.getElementById('pwInput').value;
-  const btn   = document.getElementById('loginBtn');
+  const email   = document.getElementById('emailInput').value.trim();
+  const pw      = document.getElementById('pwInput').value;
+  const btn     = document.getElementById('loginBtn');
   const spinner = document.getElementById('loginSpinner');
   const btnText = document.getElementById('loginBtnText');
   const errMsg  = document.getElementById('errMsg');
@@ -103,30 +126,44 @@ async function doLogin() {
 
   btn.disabled = true;
   spinner.style.display = '';
-  btnText.textContent = 'Memproses...';
+  btnText.style.display = 'none';
   errMsg.classList.remove('show');
 
-  const { data, error } = await _db.auth.signInWithPassword({ email, password: pw });
+  const { data, error } = await window._db.auth.signInWithPassword({ email, password: pw });
 
-  if (error || !data.session) {
-    errMsg.textContent = 'Email atau password salah.';
+  btn.disabled = false;
+  spinner.style.display = 'none';
+  btnText.style.display = '';
+
+  if (error) {
+    // Tampilkan error asli dari Supabase
+    let msg = '';
+    if (error.message === 'Invalid login credentials') {
+      msg = '❌ Email atau password salah.\n\nPastikan user sudah dibuat di Supabase Authentication → Users.';
+    } else if (error.message === 'Email not confirmed') {
+      msg = '❌ Email belum dikonfirmasi.\n\nBuka Supabase → Authentication → Users → klik user → centang "Email Confirmed".';
+    } else {
+      msg = '❌ ' + error.message;
+    }
+    errMsg.innerHTML = msg.replace(/\n/g, '<br>');
     errMsg.classList.add('show');
-    btn.disabled = false;
-    spinner.style.display = 'none';
-    btnText.textContent = 'Masuk';
     return;
   }
 
-  // Redirect ke admin panel
+  if (!data.session) {
+    errMsg.innerHTML = '❌ Login gagal, coba lagi.';
+    errMsg.classList.add('show');
+    return;
+  }
+
   window.location.href = 'admin.html';
 }
 
-// Enter key
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
 
-// Jika sudah login, langsung redirect
+// Kalau sudah login, langsung redirect
 window._db.auth.getSession().then(({ data }) => {
   if (data.session) window.location.href = 'admin.html';
 });
