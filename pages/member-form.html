@@ -95,6 +95,7 @@
           <div class="card-head">Identitas</div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:13px;">
             <div class="fg"><label>Nama Lengkap *</label><input id="fName" placeholder="Nama lengkap" oninput="updateInitial()"></div>
+            <div class="fg"><label>Nama Panggilan</label><input id="fNickname" placeholder="Contoh: Budi, Siti, Pak Haji..."></div>
             <div class="fg"><label>Inisial (otomatis)</label><input id="fInitials" placeholder="Contoh: A" maxlength="3"></div>
             <div class="fg2">
               <div class="fg"><label>Tanggal Lahir</label><input type="date" id="fBirthDate"></div>
@@ -144,6 +145,21 @@
             <div class="fg"><label>Pasangan (Suami / Istri)</label>
               <select id="fSpouse"><option value="">— Tidak ada / Belum menikah —</option></select>
             </div>
+            <div class="fg"><label>Anak ke- (urutan)</label>
+                <select id="fChildOrder">
+                  <option value="">— Tidak diketahui —</option>
+                  <option value="1">Anak ke-1</option>
+                  <option value="2">Anak ke-2</option>
+                  <option value="3">Anak ke-3</option>
+                  <option value="4">Anak ke-4</option>
+                  <option value="5">Anak ke-5</option>
+                  <option value="6">Anak ke-6</option>
+                  <option value="7">Anak ke-7</option>
+                  <option value="8">Anak ke-8</option>
+                  <option value="9">Anak ke-9</option>
+                  <option value="10">Anak ke-10</option>
+                </select>
+              </div>
             <div class="tgl-row">
               <div class="tl">
                 <div>
@@ -281,6 +297,7 @@ async function loadExisting(id) {
   document.getElementById('formSub').textContent   = data.name;
 
   document.getElementById('fName').value      = data.name || '';
+  document.getElementById('fNickname').value  = data.nickname || '';
   document.getElementById('fInitials').value  = data.initials || '';
   document.getElementById('fBirthDate').value = data.birth_date || '';
   document.getElementById('fBirthCity').value = data.birth_city || '';
@@ -292,6 +309,7 @@ async function loadExisting(id) {
   document.getElementById('fFather').value    = data.father_id || '';
   document.getElementById('fMother').value    = data.mother_id || '';
   document.getElementById('fSpouse').value    = data.spouse_id || '';
+  document.getElementById('fChildOrder').value = data.child_order || '';
 
   if (data.is_inlaw) document.getElementById('tglInlaw').classList.add('on');
   if (data.is_deceased) {
@@ -334,6 +352,7 @@ async function saveMember() {
 
   const payload = {
     name:        name,
+    nickname:    document.getElementById('fNickname').value.trim() || null,
     initials:    document.getElementById('fInitials').value.trim() || name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(),
     generation:  parseInt(gen),
     family_id:   isInlaw ? null : defaultFamilyId,
@@ -346,6 +365,7 @@ async function saveMember() {
     father_id:   document.getElementById('fFather').value     || null,
     mother_id:   document.getElementById('fMother').value     || null,
     spouse_id:   document.getElementById('fSpouse').value     || null,
+    child_order: document.getElementById('fChildOrder').value ? parseInt(document.getElementById('fChildOrder').value) : null,
     is_inlaw:    isInlaw,
     is_deceased: document.getElementById('tglDec').classList.contains('on'),
     death_date:  document.getElementById('fDeathDate').value  || null,
