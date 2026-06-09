@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SilsilahKu — Admin Login</title>
+<link rel="stylesheet" href="../css/global.css">
+<style>
+  body {
+    min-height: 100vh;
+    background: linear-gradient(150deg, #1a120a 0%, #2a1e0e 40%, #1e1810 100%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--white);
+    border-radius: 22px;
+    width: 100%; max-width: 380px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+  }
+  .login-top {
+    background: var(--ink);
+    padding: 32px 28px 24px;
+    text-align: center;
+  }
+  .login-logo { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--sepia); }
+  .login-logo span { color: #fff; }
+  .login-tag { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 4px; }
+  .login-body { padding: 28px; }
+  .login-body h2 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px; }
+  .login-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 14px; }
+  .error-msg {
+    background: rgba(196,84,110,0.1); border: 1px solid rgba(196,84,110,0.3);
+    color: var(--rose); border-radius: 9px; padding: 10px 13px;
+    font-size: 13px; margin-bottom: 14px; display: none;
+  }
+  .error-msg.show { display: block; }
+  .login-btn {
+    width: 100%; padding: 14px;
+    background: var(--ink); color: var(--sepia);
+    border: none; border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 8px;
+    transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .login-btn:hover { background: var(--sepia); color: var(--ink); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-top">
+    <div class="login-logo">Silsilah<span>Ku</span></div>
+    <div class="login-tag">Portal Admin Keluarga</div>
+  </div>
+  <div class="login-body">
+    <h2>Masuk ke Admin</h2>
+
+    <div class="error-msg" id="errMsg">Email atau password salah.</div>
+
+    <div class="fg" style="margin-bottom:14px;">
+      <label>Email</label>
+      <input type="email" id="emailInput" placeholder="admin@silsilahku.id" autocomplete="email">
+    </div>
+    <div class="fg" style="margin-bottom:6px;">
+      <label>Password</label>
+      <input type="password" id="pwInput" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <span id="loginBtnText">Masuk</span>
+      <span id="loginSpinner" class="spinner" style="display:none;width:16px;height:16px;"></span>
+    </button>
+
+    <div class="login-hint">Hanya admin keluarga yang dapat mengubah data</div>
+    <div style="text-align:center;margin-top:12px;">
+      <a href="../index.html" style="font-size:12px;color:var(--muted);">← Kembali ke Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script>
+async function doLogin() {
+  const email = document.getElementById('emailInput').value.trim();
+  const pw    = document.getElementById('pwInput').value;
+  const btn   = document.getElementById('loginBtn');
+  const spinner = document.getElementById('loginSpinner');
+  const btnText = document.getElementById('loginBtnText');
+  const errMsg  = document.getElementById('errMsg');
+
+  if (!email || !pw) {
+    errMsg.textContent = 'Email dan password wajib diisi.';
+    errMsg.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true;
+  spinner.style.display = '';
+  btnText.textContent = 'Memproses...';
+  errMsg.classList.remove('show');
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+
+  if (error || !data.session) {
+    errMsg.textContent = 'Email atau password salah.';
+    errMsg.classList.add('show');
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Masuk';
+    return;
+  }
+
+  // Redirect ke admin panel
+  window.location.href = 'admin.html';
+}
+
+// Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// Jika sudah login, langsung redirect
+supabase.auth.getSession().then(({ data }) => {
+  if (data.session) window.location.href = 'admin.html';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+/* ============================================================
+   SilsilahKu — Tree Styles
+   ============================================================ */
+
+/* Viewport */
+.tree-vp {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px 52px;
+  background: var(--ivory);
+  min-height: 300px;
+}
+.tree-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Family block: couple on top, children below */
+.family-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Couple row */
+.couple-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.heart-sep {
+  font-size: 11px;
+  color: var(--sepia-lt);
+  padding: 0 2px;
+  background: var(--ivory);
+  line-height: 1;
+}
+
+/* Vertical connector from couple to h-bar */
+.v-conn {
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(var(--sepia-lt), rgba(191,154,88,0.2));
+  border-radius: 1px;
+}
+
+/* Horizontal bar above siblings */
+.h-bar {
+  height: 2px;
+  background: rgba(191,154,88,0.35);
+  border-radius: 1px;
+  align-self: stretch;
+}
+
+/* Children spread row */
+.siblings-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.child-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 10px;
+}
+.child-drop {
+  width: 2px;
+  height: 20px;
+  background: rgba(191,154,88,0.35);
+  border-radius: 1px;
+  margin-bottom: 2px;
+}
+
+/* ── NODE ── */
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  min-width: 68px;
+  max-width: 76px;
+}
+.node-ava {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--parch);
+  border: 2.5px solid rgba(191,154,88,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 19px; font-weight: 700; color: var(--sepia);
+  position: relative; overflow: hidden;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  box-shadow: var(--sh);
+  flex-shrink: 0;
+}
+.node-ava img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+}
+.node:hover .node-ava,
+.node:active .node-ava {
+  transform: scale(1.1);
+  border-color: var(--sepia);
+  box-shadow: 0 4px 16px rgba(191,154,88,0.3);
+}
+.node.inlaw .node-ava {
+  border-style: dashed;
+  border-color: rgba(191,154,88,0.45);
+  background: rgba(237,228,212,0.45);
+}
+.node.dec .node-ava {
+  border-color: rgba(196,84,110,0.45);
+}
+.node-rose {
+  position: absolute; bottom: -1px; right: -1px;
+  font-size: 13px; line-height: 1;
+}
+.node-name {
+  font-size: 10px; font-weight: 600; color: var(--ink);
+  text-align: center; line-height: 1.3;
+  max-width: 72px; word-break: break-word;
+}
+.node-year {
+  font-size: 9px; color: var(--muted);
+  text-align: center; margin-top: -2px;
+}
+.inlaw-pill {
+  font-size: 8px; font-weight: 700; color: var(--muted);
+  border: 1px dashed rgba(191,154,88,0.4);
+  border-radius: 6px; padding: 1px 5px;
+}
+
+/* Legend */
+.tree-legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 14px 18px;
+  background: var(--white);
+  border-top: 1px solid var(--line);
+}
+.leg { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--ink-soft); }
+.lc { width:22px; height:22px; border-radius:50%; background:var(--parch); flex-shrink:0; }
+.lc.s { border:2.5px solid var(--sepia); }
+.lc.d { border:2px dashed rgba(191,154,88,0.55); }
+.lc.r { border:2px solid rgba(196,84,110,0.45); }

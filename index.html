@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SilsilahKu — Pohon Keluarga</title>
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/tree.css">
+<link rel="stylesheet" href="css/popup.css">
+<style>
+  /* Dashboard-specific */
+  .dash-top {
+    background: var(--ink);
+    height: 56px; padding: 0 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid rgba(191,154,88,0.12);
+  }
+  .d-logo { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--sepia); }
+  .d-logo span { color: #fff; }
+  .d-sub { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
+  .d-right { display: flex; gap: 8px; }
+  .d-btn {
+    background: rgba(191,154,88,0.1); border: 1px solid rgba(191,154,88,0.22);
+    color: rgba(255,255,255,0.65); border-radius: 18px;
+    padding: 6px 13px; font-size: 12px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .d-btn:hover { background: rgba(191,154,88,0.2); color: var(--sepia); }
+
+  .hero {
+    background: linear-gradient(135deg, #26190a 0%, #1e1810 70%);
+    padding: 24px 18px 20px;
+    border-bottom: 1px solid rgba(191,154,88,0.12);
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; font-weight: 700; color: #fff; line-height: 1.25;
+  }
+  .hero-title em { color: var(--sepia); font-style: italic; }
+  .hero-stats { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .hstat {
+    background: rgba(191,154,88,0.09); border: 1px solid rgba(191,154,88,0.18);
+    border-radius: 10px; padding: 9px 14px;
+  }
+  .hstat .n {
+    font-size: 20px; font-weight: 700; color: var(--sepia);
+    font-family: 'Playfair Display', serif;
+  }
+  .hstat .l { font-size: 10px; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.7px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="dash-top">
+  <div>
+    <div class="d-logo">Silsilah<span>Ku</span></div>
+    <div class="d-sub" id="heroSubtitle">Memuat...</div>
+  </div>
+  <div class="d-right">
+    <a class="d-btn" href="pages/admin.html">🔐 Admin</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-title" id="heroTitle">Memuat...</div>
+  <div class="hero-stats" id="heroStats">
+    <div class="hstat"><div class="n" id="statTotal">—</div><div class="l">Anggota</div></div>
+    <div class="hstat"><div class="n" id="statGen">—</div><div class="l">Generasi</div></div>
+    <div class="hstat"><div class="n" id="statSince">—</div><div class="l">Sejak</div></div>
+    <div class="hstat"><div class="n" id="statDec">—</div><div class="l">🌹 Almarhum</div></div>
+  </div>
+</div>
+
+<!-- TREE -->
+<div class="tree-vp">
+  <div class="tree-root" id="treeRoot"></div>
+</div>
+
+<!-- LEGEND -->
+<div class="tree-legend">
+  <div class="leg"><div class="lc s"></div>Anggota inti</div>
+  <div class="leg"><div class="lc d"></div>Menantu (dari luar keluarga)</div>
+  <div class="leg"><div class="lc r"></div>🌹 Almarhum / Almarhumah</div>
+</div>
+
+<!-- BIO POPUP -->
+<div class="overlay" id="bioOverlay">
+  <div class="bio-sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="bioClose">✕</button>
+    <div class="sheet-head">
+      <div class="sheet-ava" id="bioAva"></div>
+      <div class="sheet-info">
+        <h2 id="bioName"></h2>
+        <div class="sheet-meta" id="bioMeta"></div>
+        <div class="sheet-tags" id="bioTags"></div>
+      </div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Garis Keturunan</div>
+      <div class="anc-trail" id="bioAncestry"></div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Biodata</div>
+      <div class="bio-rows" id="bioBio"></div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Keluarga Terdekat</div>
+      <div class="rel-scroll" id="bioRels"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-ghost" onclick="closeBio()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/popup.js"></script>
+<script>
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function loadSettings() {
+  const { data } = await supabase.from('settings').select('*');
+  if (!data) return {};
+  return Object.fromEntries(data.map(r => [r.key, r.value]));
+}
+
+async function init() {
+  const settings = await loadSettings();
+
+  const title = settings.family_title || 'Keluarga Besar';
+  const city  = settings.family_city  || '';
+  document.title = title + ' — SilsilahKu';
+  document.getElementById('heroTitle').innerHTML =
+    title + (city ? '<br><em>' + city + '</em>' : '');
+  document.getElementById('heroSubtitle').textContent =
+    settings.family_description || title;
+
+  // Render tree
+  await renderTree('treeRoot', openBio);
+
+  // Stats
+  const total   = ALL_MEMBERS.length;
+  const maxGen  = Math.max(...ALL_MEMBERS.map(m => m.generation || 0));
+  const deceased = ALL_MEMBERS.filter(m => m.is_deceased).length;
+  const minBirth = ALL_MEMBERS.reduce((mn, m) => {
+    const y = m.birth_date ? parseInt(m.birth_date) : 9999;
+    return y < mn ? y : mn;
+  }, 9999);
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statGen').textContent   = maxGen;
+  document.getElementById('statSince').textContent = minBirth < 9999 ? minBirth : '—';
+  document.getElementById('statDec').textContent   = deceased;
+}
+
+init();
+</script>
+</body>
+</html>

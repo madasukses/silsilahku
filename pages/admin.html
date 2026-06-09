@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SilsilahKu — Admin</title>
+<link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/admin.css">
+<link rel="stylesheet" href="../css/popup.css">
+<link rel="stylesheet" href="../css/tree.css">
+</head>
+<body data-admin="true">
+
+<div class="admin-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="aside">
+    <div class="aside-top">
+      <div class="aside-logo">Silsilah<span>Ku</span></div>
+      <div class="aside-role" id="adminRole">Admin</div>
+    </div>
+    <nav class="aside-nav">
+      <div class="nav-lbl">Menu Utama</div>
+      <a class="nav-item active" href="admin.html"><span class="ni-ic">👥</span> <span>Anggota</span></a>
+      <a class="nav-item" href="member-form.html"><span class="ni-ic">➕</span> <span>Tambah Anggota</span></a>
+      <a class="nav-item" href="../index.html" target="_blank"><span class="ni-ic">🌳</span> <span>Lihat Dashboard</span></a>
+      <div class="nav-lbl" style="margin-top:6px;">Manajemen</div>
+      <a class="nav-item" href="settings.html"><span class="ni-ic">🛠️</span> <span>Pengaturan</span></a>
+      <button class="nav-item" onclick="exportCSV()"><span class="ni-ic">📤</span> <span>Export CSV</span></button>
+    </nav>
+    <div class="aside-bot">
+      <button class="nav-item" onclick="doLogout()"><span class="ni-ic">🚪</span> <span>Keluar</span></button>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="admin-content">
+    <div class="content-header">
+      <div>
+        <div class="content-title">Daftar Anggota</div>
+        <div class="content-sub">Kelola semua data anggota keluarga</div>
+      </div>
+      <a class="btn-primary" href="member-form.html">＋ Tambah Anggota</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-num" id="sTotal">—</div><div class="stat-lbl">Total Anggota</div></div>
+      <div class="stat-card"><div class="stat-num" id="sGen">—</div><div class="stat-lbl">Generasi</div></div>
+      <div class="stat-card"><div class="stat-num" id="sInlaw">—</div><div class="stat-lbl">Menantu</div><div class="stat-diff">Garis putus</div></div>
+      <div class="stat-card"><div class="stat-num" id="sDec">—</div><div class="stat-lbl">Almarhum 🌹</div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="section" style="padding-bottom:40px;margin-top:16px;">
+      <div class="section-head">
+        <div class="section-title">Semua Anggota</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="searchInput" style="padding:7px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:'Inter',sans-serif;font-size:12px;outline:none;background:var(--white);width:180px;" placeholder="🔍 Cari nama...">
+          <select id="genFilter" style="padding:7px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:'Inter',sans-serif;font-size:12px;outline:none;background:var(--white);">
+            <option value="">Semua Generasi</option>
+            <option value="1">Gen 1 — Leluhur</option>
+            <option value="2">Gen 2 — Anak</option>
+            <option value="3">Gen 3 — Cucu</option>
+            <option value="4">Gen 4 — Cicit</option>
+            <option value="5">Gen 5 — Canggah</option>
+            <option value="6">Gen 6 — Wareng</option>
+            <option value="7">Gen 7 — Udeg-udeg</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="tableWrap">
+        <div class="page-loading"><div class="spinner"></div> Memuat data...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- BIO POPUP -->
+<div class="overlay" id="bioOverlay">
+  <div class="bio-sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="bioClose">✕</button>
+    <div class="sheet-head">
+      <div class="sheet-ava" id="bioAva"></div>
+      <div class="sheet-info">
+        <h2 id="bioName"></h2>
+        <div class="sheet-meta" id="bioMeta"></div>
+        <div class="sheet-tags" id="bioTags"></div>
+      </div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Garis Keturunan</div>
+      <div class="anc-trail" id="bioAncestry"></div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Biodata</div>
+      <div class="bio-rows" id="bioBio"></div>
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-section-title">Keluarga Terdekat</div>
+      <div class="rel-scroll" id="bioRels"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="bioEditBtn" onclick="editFromPopup()">✏️ Edit Biodata</button>
+      <button class="btn-ghost" onclick="closeBio()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/config.js"></script>
+<script src="../js/tree.js"></script>
+<script src="../js/popup.js"></script>
+<script>
+const GEN_LABELS = ['','Leluhur','Anak','Cucu','Cicit','Canggah','Wareng','Udeg-udeg'];
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function editFromPopup() {
+  const id = document.getElementById('bioEditBtn').dataset.id;
+  if (id) window.location.href = 'member-form.html?id=' + id;
+}
+
+/* ── Auth guard ── */
+async function checkAuth() {
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) {
+    window.location.href = 'login.html';
+    return false;
+  }
+  const email = data.session.user.email;
+  document.getElementById('adminRole').textContent = email;
+  return true;
+}
+
+async function doLogout() {
+  await supabase.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+/* ── Load & render table ── */
+let members = [];
+
+async function loadTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const genVal = document.getElementById('genFilter').value;
+
+  let query = supabase.from('members').select('*').order('generation').order('created_at');
+  const { data, error } = await query;
+
+  if (error) { showToast('❌ Gagal memuat data'); return; }
+  members = data || [];
+  ALL_MEMBERS = members; // sync for popup
+
+  // Stats
+  document.getElementById('sTotal').textContent  = members.length;
+  document.getElementById('sGen').textContent    = Math.max(...members.map(m => m.generation || 0));
+  document.getElementById('sInlaw').textContent  = members.filter(m => m.is_inlaw).length;
+  document.getElementById('sDec').textContent    = members.filter(m => m.is_deceased).length;
+
+  // Filter
+  let filtered = members;
+  if (search) filtered = filtered.filter(m => m.name.toLowerCase().includes(search));
+  if (genVal) filtered = filtered.filter(m => String(m.generation) === genVal);
+
+  renderTable(filtered);
+}
+
+function renderTable(data) {
+  const wrap = document.getElementById('tableWrap');
+  if (data.length === 0) {
+    wrap.innerHTML = '<div class="page-loading">Tidak ada data.</div>';
+    return;
+  }
+
+  const rows = data.map(p => {
+    const ini = (p.initials || p.name[0]).toUpperCase();
+    const father = members.find(m => m.id === p.father_id);
+    const mother = members.find(m => m.id === p.mother_id);
+    const avaContent = p.avatar_url
+      ? `<img src="${p.avatar_url}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`
+      : ini;
+    return `<tr>
+      <td style="display:flex;align-items:center;gap:9px;">
+        <div class="td-ava">${avaContent}${p.is_deceased ? '<span style="position:absolute;bottom:-1px;right:-1px;font-size:9px;">🌹</span>' : ''}</div>
+        <div><div class="td-name">${p.name}</div><div class="td-sub">${p.birth_date ? 'b. ' + new Date(p.birth_date).getFullYear() : ''}</div></div>
+      </td>
+      <td><span class="badge">Gen ${p.generation} · ${GEN_LABELS[p.generation] || ''}</span></td>
+      <td>${p.is_deceased ? '<span class="badge rose">🌹 Almarhum</span>' : p.is_inlaw ? '<span class="badge dashed">Menantu</span>' : '<span class="badge green">Hidup</span>'}</td>
+      <td style="font-size:12px;color:var(--ink-soft);">${father ? father.name : '—'}</td>
+      <td style="font-size:12px;color:var(--ink-soft);">${mother ? mother.name : '—'}</td>
+      <td style="font-size:12px;">${p.birth_city || '—'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="action-btn" onclick="viewMember('${p.id}')" title="Lihat">👁</button>
+          <button class="action-btn" onclick="window.location.href='member-form.html?id=${p.id}'" title="Edit">✏️</button>
+          <button class="action-btn" onclick="deleteMember('${p.id}','${p.name.replace(/'/g,"\\'")} ')" title="Hapus">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th>Nama</th><th>Generasi</th><th>Status</th>
+      <th>Ayah</th><th>Ibu</th><th>Kota</th><th>Aksi</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function viewMember(id) {
+  const p = members.find(m => m.id === id);
+  if (p) openBio(p);
+}
+
+async function deleteMember(id, name) {
+  if (!confirm(`Hapus "${name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+  const { error } = await supabase.from('members').delete().eq('id', id);
+  if (error) { showToast('❌ Gagal menghapus'); return; }
+  showToast('✓ ' + name + ' dihapus');
+  loadTable();
+}
+
+function exportCSV() {
+  if (!members.length) return;
+  const headers = ['Nama','Generasi','Status','Ayah','Ibu','Kota Lahir','Pekerjaan','Lahir','Wafat'];
+  const rows = members.map(p => {
+    const fa = members.find(m => m.id === p.father_id);
+    const mo = members.find(m => m.id === p.mother_id);
+    return [
+      p.name, p.generation,
+      p.is_deceased ? 'Almarhum' : p.is_inlaw ? 'Menantu' : 'Hidup',
+      fa ? fa.name : '', mo ? mo.name : '',
+      p.birth_city || '', p.job || '',
+      p.birth_date || '', p.death_date || ''
+    ].map(v => `"${v}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'silsilahku-anggota.csv';
+  a.click();
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await checkAuth();
+  if (!ok) return;
+
+  await loadTable();
+
+  document.getElementById('searchInput').addEventListener('input', loadTable);
+  document.getElementById('genFilter').addEventListener('change', loadTable);
+});
+</script>
+</body>
+</html>
