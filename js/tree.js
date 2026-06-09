@@ -10,7 +10,7 @@ let ALL_MEMBERS = [];
 
 /* ── Load all members from Supabase ── */
 async function loadMembers() {
-  const { data, error } = await supabase
+  const { data, error } = await _db
     .from('members')
     .select('*')
     .order('generation', { ascending: true });
