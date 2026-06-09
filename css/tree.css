@@ -19,7 +19,7 @@
 .family-block {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start; /* garis jatuh di bawah node pertama (inti) */
 }
 
 /* ── COUPLE ROW ── */
@@ -27,7 +27,6 @@
   display: flex;
   align-items: center;
   gap: 0;
-  position: relative;
 }
 .heart-sep {
   font-size: 11px;
@@ -36,33 +35,31 @@
   background: var(--ivory);
   line-height: 1;
   z-index: 2;
+  margin-bottom: 12px; /* sejajar dengan tengah avatar */
 }
 
-/* ── CONNECTOR: dari bawah avatar ke h-bar ── */
-/* Garis vertikal turun dari tengah couple */
+/* ── CONNECTOR VERTIKAL ── */
 .v-conn {
   width: 3px;
   height: 20px;
   background: var(--ink);
   border-radius: 0;
-  margin: 0 auto;
-  /* Tidak ada margin-top — langsung sambung ke avatar bawah */
+  /* margin-left diatur inline JS agar tepat di tengah avatar inti */
 }
 
-/* ── H-BAR horizontal di atas anak-anak ── */
+/* ── H-BAR ── */
 .h-bar {
   height: 3px;
   background: var(--ink);
   border-radius: 0;
-  align-self: stretch;
-  /* lebar diatur oleh siblings-row */
 }
 
-/* ── CHILDREN ROW ── */
+/* ── CHILDREN ── */
 .siblings-row {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 3px; /* tinggi h-bar agar drop-line mulai pas setelah h-bar */
 }
 .child-col {
   display: flex;
@@ -70,15 +67,12 @@
   align-items: center;
   padding: 0 12px;
 }
-
-/* Drop line dari h-bar turun ke atas avatar anak */
-/* Panjang = (AVA_SIZE/2) agar menempel tepat di tepi atas avatar */
 .child-drop {
   width: 3px;
-  height: 20px;   /* tepat nyambung ke border atas avatar (54px/2 = 27, minus padding) */
+  height: 20px;
   background: var(--ink);
   border-radius: 0;
-  margin-bottom: 0; /* langsung menempel ke node */
+  margin-bottom: 0;
 }
 
 /* ── NODE ── */
