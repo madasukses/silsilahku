@@ -131,7 +131,7 @@ function editFromPopup() {
 
 /* ── Auth guard ── */
 async function checkAuth() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await _db.auth.getSession();
   if (!data.session) {
     window.location.href = 'login.html';
     return false;
@@ -142,7 +142,7 @@ async function checkAuth() {
 }
 
 async function doLogout() {
-  await supabase.auth.signOut();
+  await _db.auth.signOut();
   window.location.href = 'login.html';
 }
 
@@ -153,7 +153,7 @@ async function loadTable() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const genVal = document.getElementById('genFilter').value;
 
-  let query = supabase.from('members').select('*').order('generation').order('created_at');
+  let query = _db.from('members').select('*').order('generation').order('created_at');
   const { data, error } = await query;
 
   if (error) { showToast('❌ Gagal memuat data'); return; }
@@ -224,7 +224,7 @@ function viewMember(id) {
 
 async function deleteMember(id, name) {
   if (!confirm(`Hapus "${name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
-  const { error } = await supabase.from('members').delete().eq('id', id);
+  const { error } = await _db.from('members').delete().eq('id', id);
   if (error) { showToast('❌ Gagal menghapus'); return; }
   showToast('✓ ' + name + ' dihapus');
   loadTable();

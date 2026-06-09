@@ -240,7 +240,7 @@ async function handleAvaChange(input) {
   document.getElementById('avaProgress').style.display = 'block';
   const ext = file.name.split('.').pop();
   const filename = `avatar-${Date.now()}.${ext}`;
-  const { data, error } = await supabase.storage
+  const { data, error } = await _db.storage
     .from('avatars')
     .upload(filename, file, { upsert: true });
 
@@ -250,14 +250,14 @@ async function handleAvaChange(input) {
     return;
   }
 
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filename);
+  const { data: urlData } = window._db.storage.from('avatars').getPublicUrl(filename);
   uploadedAvaUrl = urlData.publicUrl;
   document.getElementById('avaProgress').style.display = 'none';
   showToast('✓ Foto berhasil diupload');
 }
 
 async function loadMemberOptions() {
-  const { data } = await supabase.from('members').select('id, name, generation, gender').order('generation').order('name');
+  const { data } = await _db.from('members').select('id, name, generation, gender').order('generation').order('name');
   allMembers = data || [];
 
   const toOption = (m) => `<option value="${m.id}">${m.name} (Gen ${m.generation})</option>`;
@@ -274,7 +274,7 @@ async function loadMemberOptions() {
 }
 
 async function loadExisting(id) {
-  const { data, error } = await supabase.from('members').select('*').eq('id', id).single();
+  const { data, error } = await _db.from('members').select('*').eq('id', id).single();
   if (error || !data) { showToast('❌ Data tidak ditemukan'); return; }
 
   document.getElementById('formTitle').textContent = 'Edit Anggota';
@@ -324,38 +324,53 @@ async function saveMember() {
   spinner.style.display = '';
   btnText.style.display = 'none';
 
+  // Ambil family_id default (keluarga pertama yang ada)
+  let defaultFamilyId = null;
+  const isInlaw = document.getElementById('tglInlaw').classList.contains('on');
+  if (!isInlaw) {
+    const { data: fams } = await _db.from('families').select('id').limit(1);
+    if (fams && fams.length) defaultFamilyId = fams[0].id;
+  }
+
   const payload = {
-    name:       name,
-    initials:   document.getElementById('fInitials').value.trim() || name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(),
-    generation: parseInt(gen),
-    birth_date: document.getElementById('fBirthDate').value || null,
-    birth_city: document.getElementById('fBirthCity').value.trim() || null,
-    gender:     document.getElementById('fGender').value || null,
-    job:        document.getElementById('fJob').value.trim() || null,
-    address:    document.getElementById('fAddress').value.trim() || null,
-    notes:      document.getElementById('fNotes').value.trim() || null,
-    father_id:  document.getElementById('fFather').value || null,
-    mother_id:  document.getElementById('fMother').value || null,
-    spouse_id:  document.getElementById('fSpouse').value || null,
-    is_inlaw:   document.getElementById('tglInlaw').classList.contains('on'),
-    is_deceased:document.getElementById('tglDec').classList.contains('on'),
-    death_date: document.getElementById('fDeathDate').value || null,
-    avatar_url: uploadedAvaUrl || null,
+    name:        name,
+    initials:    document.getElementById('fInitials').value.trim() || name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(),
+    generation:  parseInt(gen),
+    family_id:   isInlaw ? null : defaultFamilyId,
+    birth_date:  document.getElementById('fBirthDate').value  || null,
+    birth_city:  document.getElementById('fBirthCity').value.trim()  || null,
+    gender:      document.getElementById('fGender').value     || null,
+    job:         document.getElementById('fJob').value.trim() || null,
+    address:     document.getElementById('fAddress').value.trim()    || null,
+    notes:       document.getElementById('fNotes').value.trim()      || null,
+    father_id:   document.getElementById('fFather').value     || null,
+    mother_id:   document.getElementById('fMother').value     || null,
+    spouse_id:   document.getElementById('fSpouse').value     || null,
+    is_inlaw:    isInlaw,
+    is_deceased: document.getElementById('tglDec').classList.contains('on'),
+    death_date:  document.getElementById('fDeathDate').value  || null,
+    avatar_url:  uploadedAvaUrl || null,
   };
 
-  let error;
+  console.log('Saving payload:', payload);
+
+  let result;
   if (editId) {
-    ({ error } = await supabase.from('members').update(payload).eq('id', editId));
+    result = await _db.from('members').update(payload).eq('id', editId).select();
   } else {
-    ({ error } = await supabase.from('members').insert(payload));
+    result = await _db.from('members').insert(payload).select();
   }
+
+  console.log('Supabase result:', result);
 
   btn.disabled = false;
   spinner.style.display = 'none';
   btnText.style.display = '';
 
-  if (error) {
-    showToast('❌ Gagal menyimpan: ' + error.message);
+  if (result.error) {
+    const msg = result.error.message || result.error.details || JSON.stringify(result.error);
+    alert('❌ Gagal menyimpan:\n' + msg);
+    showToast('❌ ' + msg.substring(0, 60));
     return;
   }
 
@@ -364,13 +379,13 @@ async function saveMember() {
 }
 
 async function doLogout() {
-  await supabase.auth.signOut();
+  await _db.auth.signOut();
   window.location.href = 'login.html';
 }
 
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', async () => {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await _db.auth.getSession();
   if (!data.session) { window.location.href = 'login.html'; return; }
 
   await loadMemberOptions();

@@ -106,7 +106,7 @@ async function doLogin() {
   btnText.textContent = 'Memproses...';
   errMsg.classList.remove('show');
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+  const { data, error } = await _db.auth.signInWithPassword({ email, password: pw });
 
   if (error || !data.session) {
     errMsg.textContent = 'Email atau password salah.';
@@ -127,7 +127,7 @@ document.addEventListener('keydown', e => {
 });
 
 // Jika sudah login, langsung redirect
-supabase.auth.getSession().then(({ data }) => {
+window._db.auth.getSession().then(({ data }) => {
   if (data.session) window.location.href = 'admin.html';
 });
 </script>
