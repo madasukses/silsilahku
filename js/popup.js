@@ -79,6 +79,8 @@ function openBio(person) {
     : null;
 
   const rows = [
+    p.nickname ? ['Nama Panggilan', p.nickname] : null,
+    p.child_order && !p.is_inlaw ? ['Urutan', 'Anak ke-' + p.child_order] : null,
     ['Ayah',         father ? father.name : '—'],
     ['Ibu',          mother ? mother.name : '—'],
     ['Pasangan',     spouse ? spouse.name : '—'],

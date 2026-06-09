@@ -61,10 +61,20 @@ function makeNode(p, onClickFn) {
 
   nd.appendChild(makeAvaEl(p));
 
+  // Nama panggilan (jika ada), fallback ke nama depan
   const nameEl = document.createElement('div');
   nameEl.className = 'node-name';
-  nameEl.textContent = p.name.split(' ')[0];
+  nameEl.textContent = p.nickname || p.name.split(' ')[0];
   nd.appendChild(nameEl);
+
+  // Urutan anak
+  if (p.child_order && !p.is_inlaw) {
+    const orderEl = document.createElement('div');
+    orderEl.className = 'node-order';
+    const suffix = ['','st','nd','rd'];
+    orderEl.textContent = 'Anak ke-' + p.child_order;
+    nd.appendChild(orderEl);
+  }
 
   const birth = p.birth_date ? new Date(p.birth_date).getFullYear() : '';
   const death = p.is_deceased && p.death_date ? '- ' + new Date(p.death_date).getFullYear() : '';
