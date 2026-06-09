@@ -49,18 +49,6 @@
   .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
   /* Panduan buat user */
-  .guide-box {
-    background: rgba(191,154,88,0.08);
-    border: 1px solid rgba(191,154,88,0.2);
-    border-radius: 10px; padding: 14px 16px;
-    margin-top: 20px; font-size: 12px; color: var(--ink-soft);
-    line-height: 1.7;
-  }
-  .guide-box strong { color: var(--sepia-dk); display: block; margin-bottom: 4px; }
-  .guide-box code {
-    background: var(--parch); padding: 1px 6px; border-radius: 4px;
-    font-size: 12px; color: var(--ink);
-  }
 </style>
 </head>
 <body>
@@ -90,16 +78,6 @@
     </button>
 
     <div class="login-hint">Hanya admin keluarga yang dapat mengubah data</div>
-
-    <div class="guide-box">
-      <strong>⚠️ Belum bisa login? Buat user admin dulu:</strong>
-      1. Buka <b>supabase.com</b> → project Anda<br>
-      2. Menu <b>Authentication → Users → Add User</b><br>
-      3. Email: <code>admin@silsilahku.id</code><br>
-      4. Password: <code>admin123</code><br>
-      5. Centang <b>Auto Confirm User</b><br>
-      6. Klik <b>Create User</b>
-    </div>
 
     <div style="text-align:center;margin-top:14px;">
       <a href="../index.html" style="font-size:12px;color:var(--muted);">← Kembali ke Dashboard</a>
