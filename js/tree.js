@@ -186,17 +186,17 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
     siblingsRow.appendChild(col);
   });
 
+  spreadWrap.appendChild(siblingsRow);
+
   if (children.length > 1) {
-    // h-bar digambar SETELAH mount via JS agar posisi tepat di center avatar
+    // h-bar di dalam siblingsRow agar position:absolute relatif terhadap siblingsRow
+    siblingsRow.style.position = 'relative';
     const hBar = document.createElement('div');
     hBar.className = 'h-bar-js';
-    spreadWrap.appendChild(hBar);
-    // Simpan referensi untuk diukur setelah DOM render
+    siblingsRow.appendChild(hBar);
     spreadWrap._hBar = hBar;
     spreadWrap._siblingsRow = siblingsRow;
   }
-
-  spreadWrap.appendChild(siblingsRow);
   block.appendChild(spreadWrap);
   return block;
 }
@@ -207,41 +207,44 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
    Ini menghindari h-bar melampaui avatar karena couple-row lebih lebar.
 ── */
 function fixHBars(container) {
-  const spreadWraps = container.querySelectorAll('.spread-wrap');
-  spreadWraps.forEach(sw => {
+  container.querySelectorAll('.spread-wrap').forEach(sw => {
     if (!sw._hBar || !sw._siblingsRow) return;
-    const cols = Array.from(sw._siblingsRow.querySelectorAll(':scope > .child-col'));
+    const sr   = sw._siblingsRow;
+    const cols = Array.from(sr.querySelectorAll(':scope > .child-col'));
     if (cols.length < 2) return;
 
-    // Ambil avatar inti LANGSUNG di child-col ini (bukan dari cucu/level bawah)
-    // Struktur: child-col > child-drop + family-block > couple-row > node:first-child > node-ava
+    // Ambil .node-ava pertama LANGSUNG di child-col (bukan nested)
     function getCoreAva(col) {
-      const fb = col.querySelector(':scope > .family-block');
-      if (!fb) return col.querySelector('.node-ava');
-      const coupleRow = fb.querySelector(':scope > .couple-row');
-      if (!coupleRow) return fb.querySelector('.node-ava');
-      // Node pertama di couple-row = anggota inti (bukan menantu)
-      const firstNode = coupleRow.querySelector(':scope > .node');
-      if (!firstNode) return coupleRow.querySelector('.node-ava');
-      return firstNode.querySelector('.node-ava');
+      // child-col > .family-block > .couple-row > .node (pertama) > .node-ava
+      const cr = col.querySelector(':scope > .family-block > .couple-row');
+      if (cr) {
+        const nd = cr.querySelector(':scope > .node');
+        if (nd) return nd.querySelector(':scope > .node-ava');
+      }
+      // fallback
+      return col.querySelector('.node-ava');
     }
 
     const firstAva = getCoreAva(cols[0]);
     const lastAva  = getCoreAva(cols[cols.length - 1]);
     if (!firstAva || !lastAva) return;
 
-    const swRect    = sw.getBoundingClientRect();
-    const firstRect = firstAva.getBoundingClientRect();
-    const lastRect  = lastAva.getBoundingClientRect();
+    // Ukur relatif terhadap siblings-row (bukan spread-wrap)
+    // agar offset flex centering tidak ikut terhitung
+    const srRect    = sr.getBoundingClientRect();
+    const fRect     = firstAva.getBoundingClientRect();
+    const lRect     = lastAva.getBoundingClientRect();
 
-    const leftCenter  = firstRect.left + firstRect.width / 2 - swRect.left;
-    const rightCenter = lastRect.left  + lastRect.width  / 2 - swRect.left;
+    const left  = fRect.left  + fRect.width  / 2 - srRect.left;
+    const right = lRect.left  + lRect.width  / 2 - srRect.left;
 
-    if (rightCenter <= leftCenter) return; // belum ter-layout, skip
+    if (right <= left) return;
 
-    const hBar = sw._hBar;
-    hBar.style.left  = leftCenter + 'px';
-    hBar.style.width = (rightCenter - leftCenter) + 'px';
+    // h-bar ada di dalam siblingsRow (position:relative)
+    // jadi left/width relatif langsung terhadap siblingsRow
+    sw._hBar.style.left  = left  + 'px';
+    sw._hBar.style.width = (right - left) + 'px';
+    sw._hBar.style.top   = '0px';
   });
 }
 
