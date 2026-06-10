@@ -1,5 +1,6 @@
 /* ============================================================
-   SilsilahKu — tree.js  (v5 — garis menempel avatar, center, mobile)
+   SilsilahKu — tree.js  v6
+   H-bar pakai CSS pure: tidak ada JS measurement
    ============================================================ */
 
 const GEN_NAMES = ['','Leluhur','Anak','Cucu','Cicit','Canggah','Wareng','Udeg-udeg'];
@@ -7,9 +8,7 @@ let ALL_MEMBERS = [];
 
 async function loadMembers() {
   const { data, error } = await window._db
-    .from('members')
-    .select('*')
-    .order('generation', { ascending: true });
+    .from('members').select('*').order('generation', { ascending: true });
   if (error) { console.error(error); return []; }
   return data || [];
 }
@@ -25,17 +24,15 @@ function makeAvaEl(p) {
   el.className = 'node-ava';
   if (p.avatar_url) {
     const img = document.createElement('img');
-    img.src = p.avatar_url;
-    img.alt = p.name;
-    img.onerror = () => { img.remove(); el.textContent = (p.initials || p.name[0]).toUpperCase(); };
+    img.src = p.avatar_url; img.alt = p.name;
+    img.onerror = () => { img.remove(); el.textContent = (p.initials||p.name[0]).toUpperCase(); };
     el.appendChild(img);
   } else {
-    el.textContent = (p.initials || p.name[0]).toUpperCase();
+    el.textContent = (p.initials||p.name[0]).toUpperCase();
   }
   if (p.is_deceased) {
     const rose = document.createElement('div');
-    rose.className = 'node-rose';
-    rose.textContent = '🌹';
+    rose.className = 'node-rose'; rose.textContent = '🌹';
     el.appendChild(rose);
   }
   return el;
@@ -43,14 +40,14 @@ function makeAvaEl(p) {
 
 function makeNode(p, onClickFn) {
   const nd = document.createElement('div');
-  nd.className = 'node' + (p.is_inlaw ? ' inlaw' : '') + (p.is_deceased ? ' dec' : '');
+  nd.className = 'node' + (p.is_inlaw?' inlaw':'') + (p.is_deceased?' dec':'');
   nd.dataset.id = p.id;
   nd.appendChild(makeAvaEl(p));
 
-  const nameEl = document.createElement('div');
-  nameEl.className = 'node-name';
-  nameEl.textContent = p.nickname || p.name.split(' ')[0];
-  nd.appendChild(nameEl);
+  const nm = document.createElement('div');
+  nm.className = 'node-name';
+  nm.textContent = p.nickname || p.name.split(' ')[0];
+  nd.appendChild(nm);
 
   if (p.child_order && !p.is_inlaw) {
     const o = document.createElement('div');
@@ -60,195 +57,112 @@ function makeNode(p, onClickFn) {
   }
 
   const birth = p.birth_date ? new Date(p.birth_date).getFullYear() : '';
-  const death = p.is_deceased && p.death_date ? ' - ' + new Date(p.death_date).getFullYear() : '';
-  if (birth || death) {
+  const death = p.is_deceased && p.death_date ? ' - '+new Date(p.death_date).getFullYear() : '';
+  if (birth||death) {
     const yr = document.createElement('div');
-    yr.className = 'node-year';
-    yr.textContent = birth + death;
+    yr.className = 'node-year'; yr.textContent = birth+death;
     nd.appendChild(yr);
   }
-
   if (p.is_inlaw) {
     const pill = document.createElement('div');
-    pill.className = 'inlaw-pill';
-    pill.textContent = 'menantu';
+    pill.className = 'inlaw-pill'; pill.textContent = 'menantu';
     nd.appendChild(pill);
   }
-
   nd.addEventListener('click', () => onClickFn(p));
   return nd;
 }
 
-/* ══════════════════════════════════════════════════════════
-   FAMILY BLOCK — SVG lines, garis tepat ke lingkaran avatar
-   
-   Struktur HTML:
-   <div class="family-block">
-     <div class="couple-row">
-       <div class="node core">...</div>   ← anggota inti
-       <div class="couple-line-h"></div>  ← garis horizontal ke pasangan
-       <div class="node inlaw">...</div>  ← menantu
-     </div>
-     <div class="v-conn"></div>           ← garis lurus bawah
-     <div class="spread-wrap">
-       <div class="h-bar"></div>          ← garis horizontal jika >1 anak
-       <div class="siblings-row">
-         <div class="child-col">
-           <div class="child-drop"></div>
-           ... child family-block ...
-         </div>
-       </div>
-     </div>
-   </div>
-   
-   Garis horizontal ke pasangan = garis nyata dari tepi kanan
-   avatar inti ke tepi kiri avatar pasangan.
-   Tidak ada jarak kosong — langsung menempel.
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   FAMILY BLOCK
 
-const AVA = 54;   // avatar diameter px
-const HALF = AVA / 2; // 27px — radius
+   Kunci desain CSS-pure h-bar:
+   Setiap child-col lebarnya SAMA = VAR(--cell).
+   Avatar selalu di tengah cell = center.
+   H-bar menggunakan:
+     margin-left:  calc(var(--cell)/2)   ← mulai dari center cell pertama
+     margin-right: calc(var(--cell)/2)   ← berakhir di center cell terakhir
+   Sehingga selalu tepat tanpa JS measurement.
+
+   Pasangan (menantu) TIDAK menambah lebar cell —
+   dia di-overlay ke kanan via absolute/flex tanpa mengubah lebar cell.
+══════════════════════════════════════════════════════════════ */
 
 function buildFamilyBlock(person, drawn, members, onClickFn) {
   if (drawn.has(person.id)) return null;
   drawn.add(person.id);
 
-  // Cari pasangan
   let spouse = person.spouse_id
     ? members.find(m => m.id === person.spouse_id)
     : members.find(m => m.spouse_id === person.id);
   if (spouse && drawn.has(spouse.id)) spouse = null;
   if (spouse) drawn.add(spouse.id);
 
-  // Anak-anak, urutkan by child_order
   const seenCh = new Set();
   const children = [];
   [person, spouse].filter(Boolean).forEach(p => {
     childrenOf(p.id, members).forEach(c => {
       if (!seenCh.has(c.id) && !drawn.has(c.id)) {
-        seenCh.add(c.id);
-        children.push(c);
+        seenCh.add(c.id); children.push(c);
       }
     });
   });
-  // Urutkan anak ke- dari kiri ke kanan
-  children.sort((a, b) => (a.child_order || 99) - (b.child_order || 99));
+  children.sort((a,b) => (a.child_order||99)-(b.child_order||99));
 
-  const hasChildren = children.length > 0;
-
-  /* ── outer block — CENTER semua ── */
   const block = document.createElement('div');
   block.className = 'family-block';
 
-  /* ── Couple row ── */
-  const coupleRow = document.createElement('div');
-  coupleRow.className = 'couple-row';
+  /* ── Couple row ──
+     Wrapper flex dengan lebar = var(--cell).
+     Pasangan ditampilkan di luar cell (tidak menambah lebar). */
+  const coupleWrap = document.createElement('div');
+  coupleWrap.className = 'couple-wrap';
 
-  // Node inti
+  // Node inti — selalu di tengah cell
   const coreNode = makeNode(person, onClickFn);
-  coupleRow.appendChild(coreNode);
+  coreNode.className += ' core-node';
+  coupleWrap.appendChild(coreNode);
 
   if (spouse) {
-    // Garis horizontal dari tepi kanan avatar inti ke tepi kiri avatar pasangan
-    // Garis berada di middle (vertikal center avatar = HALF dari atas)
+    // Pasangan + garis horizontal di luar cell kanan
+    const spouseWrap = document.createElement('div');
+    spouseWrap.className = 'spouse-wrap';
     const hLine = document.createElement('div');
     hLine.className = 'couple-hline';
-    coupleRow.appendChild(hLine);
-
-    const spouseNode = makeNode(spouse, onClickFn);
-    coupleRow.appendChild(spouseNode);
+    spouseWrap.appendChild(hLine);
+    spouseWrap.appendChild(makeNode(spouse, onClickFn));
+    coupleWrap.appendChild(spouseWrap);
   }
 
-  block.appendChild(coupleRow);
+  block.appendChild(coupleWrap);
 
-  if (!hasChildren) return block;
+  if (!children.length) return block;
 
-  // Garis vertikal dari bawah avatar inti
+  // Garis vertikal dari bawah cell (bukan dari pasangan)
   const vConn = document.createElement('div');
   vConn.className = 'v-conn';
   block.appendChild(vConn);
 
-  // Spread wrap
-  const spreadWrap = document.createElement('div');
-  spreadWrap.className = 'spread-wrap';
-
-  const siblingsRow = document.createElement('div');
-  siblingsRow.className = 'siblings-row';
+  // Children container
+  const childrenWrap = document.createElement('div');
+  childrenWrap.className = children.length === 1 ? 'children-wrap single' : 'children-wrap';
 
   children.forEach(child => {
     const col = document.createElement('div');
     col.className = 'child-col';
+
     const drop = document.createElement('div');
     drop.className = 'child-drop';
     col.appendChild(drop);
+
     const childBlock = buildFamilyBlock(child, drawn, members, onClickFn);
     if (childBlock) col.appendChild(childBlock);
-    siblingsRow.appendChild(col);
+    childrenWrap.appendChild(col);
   });
 
-  spreadWrap.appendChild(siblingsRow);
-
-  if (children.length > 1) {
-    // h-bar di dalam siblingsRow agar position:absolute relatif terhadap siblingsRow
-    siblingsRow.style.position = 'relative';
-    const hBar = document.createElement('div');
-    hBar.className = 'h-bar-js';
-    siblingsRow.appendChild(hBar);
-    spreadWrap._hBar = hBar;
-    spreadWrap._siblingsRow = siblingsRow;
-  }
-  block.appendChild(spreadWrap);
+  block.appendChild(childrenWrap);
   return block;
 }
 
-/* ── Fix h-bar positions after DOM is rendered ──
-   Mengukur posisi center avatar dari child-col pertama dan terakhir,
-   lalu set h-bar.style left/right secara presisi.
-   Ini menghindari h-bar melampaui avatar karena couple-row lebih lebar.
-── */
-function fixHBars(container) {
-  container.querySelectorAll('.spread-wrap').forEach(sw => {
-    if (!sw._hBar || !sw._siblingsRow) return;
-    const sr   = sw._siblingsRow;
-    const cols = Array.from(sr.querySelectorAll(':scope > .child-col'));
-    if (cols.length < 2) return;
-
-    // Ambil .node-ava pertama LANGSUNG di child-col (bukan nested)
-    function getCoreAva(col) {
-      // child-col > .family-block > .couple-row > .node (pertama) > .node-ava
-      const cr = col.querySelector(':scope > .family-block > .couple-row');
-      if (cr) {
-        const nd = cr.querySelector(':scope > .node');
-        if (nd) return nd.querySelector(':scope > .node-ava');
-      }
-      // fallback
-      return col.querySelector('.node-ava');
-    }
-
-    const firstAva = getCoreAva(cols[0]);
-    const lastAva  = getCoreAva(cols[cols.length - 1]);
-    if (!firstAva || !lastAva) return;
-
-    // Ukur relatif terhadap siblings-row (bukan spread-wrap)
-    // agar offset flex centering tidak ikut terhitung
-    const srRect    = sr.getBoundingClientRect();
-    const fRect     = firstAva.getBoundingClientRect();
-    const lRect     = lastAva.getBoundingClientRect();
-
-    const left  = fRect.left  + fRect.width  / 2 - srRect.left;
-    const right = lRect.left  + lRect.width  / 2 - srRect.left;
-
-    if (right <= left) return;
-
-    // h-bar ada di dalam siblingsRow (position:relative)
-    // jadi left/width relatif langsung terhadap siblingsRow
-    sw._hBar.style.left  = left  + 'px';
-    sw._hBar.style.width = (right - left) + 'px';
-    sw._hBar.style.top   = '0px';
-  });
-}
-
-/* ── Render ── */
 async function renderTree(containerId, onClickFn) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -262,23 +176,11 @@ async function renderTree(containerId, onClickFn) {
 
   container.innerHTML = '';
   const drawn = new Set();
-  const roots = ALL_MEMBERS.filter(p => !p.is_inlaw && !p.father_id && !p.mother_id);
-  roots.forEach(rp => {
-    if (drawn.has(rp.id)) return;
-    const block = buildFamilyBlock(rp, drawn, ALL_MEMBERS, onClickFn);
-    if (block) container.appendChild(block);
-  });
-
-  // Ukur posisi h-bar setelah layout selesai sepenuhnya
-  // 1) double rAF untuk layout awal
-  // 2) setTimeout 100ms sebagai fallback untuk tree yang dalam
-  // 3) resize untuk rotasi layar / zoom
-  function doFix() { fixHBars(container); }
-
-  requestAnimationFrame(() => requestAnimationFrame(doFix));
-  setTimeout(doFix, 150);
-
-  window.addEventListener('resize', () => {
-    requestAnimationFrame(doFix);
-  }, { passive: true });
+  ALL_MEMBERS
+    .filter(p => !p.is_inlaw && !p.father_id && !p.mother_id)
+    .forEach(rp => {
+      if (drawn.has(rp.id)) return;
+      const block = buildFamilyBlock(rp, drawn, ALL_MEMBERS, onClickFn);
+      if (block) container.appendChild(block);
+    });
 }
