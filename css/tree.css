@@ -69,24 +69,42 @@
   align-items: stretch;
 }
 
-/* H-bar horizontal di atas semua anak */
-.h-bar {
-  height: var(--line-w);
-  background: var(--line-color);
-  /* otomatis stretch selebar siblings-row */
+/* ── SIBLINGS ROW ── */
+:root {
+  --col-pad: 10px; /* padding kiri/kanan child-col */
 }
 
-/* ── SIBLINGS ROW ── */
 .siblings-row {
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  position: relative;
 }
+
+/*
+  Garis horizontal (h-bar) digambar via ::before.
+  Mulai dari: left  = --col-pad + --ava-half (center avatar paling kiri)
+  Berakhir di: right = --col-pad + --ava-half (center avatar paling kanan)
+  Sehingga garis TEPAT di tengah lingkaran, tidak melampaui.
+*/
+.siblings-row.has-hbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left:  calc(var(--col-pad) + var(--ava-half));
+  right: calc(var(--col-pad) + var(--ava-half));
+  height: var(--line-w);
+  background: var(--line-color);
+  z-index: 1;
+}
+
 .child-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 var(--col-pad);
+  position: relative;
+  z-index: 2;
 }
 .child-drop {
   width: var(--line-w);
