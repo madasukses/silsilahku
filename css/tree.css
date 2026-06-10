@@ -62,54 +62,39 @@
   /* margin-top: 0 — langsung di bawah avatar (tidak ada gap) */
 }
 
-/* ── SPREAD WRAP — container h-bar + siblings ── */
-.spread-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
 /* ── SIBLINGS ROW ── */
-:root {
-  --col-pad: 10px; /* padding kiri/kanan child-col */
-}
-
 .siblings-row {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  position: relative;
 }
-
-/*
-  Garis horizontal (h-bar) digambar via ::before.
-  Mulai dari: left  = --col-pad + --ava-half (center avatar paling kiri)
-  Berakhir di: right = --col-pad + --ava-half (center avatar paling kanan)
-  Sehingga garis TEPAT di tengah lingkaran, tidak melampaui.
-*/
-.siblings-row.has-hbar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left:  calc(var(--col-pad) + var(--ava-half));
-  right: calc(var(--col-pad) + var(--ava-half));
-  height: var(--line-w);
-  background: var(--line-color);
-  z-index: 1;
-}
-
 .child-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 var(--col-pad);
-  position: relative;
-  z-index: 2;
+  padding: 0 10px;
 }
 .child-drop {
   width: var(--line-w);
   height: 24px;
   background: var(--line-color);
+}
+
+/* ── H-bar via JS (posisi diukur dari getBoundingClientRect) ── */
+.spread-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative; /* anchor untuk h-bar-js absolute */
+}
+.h-bar-js {
+  position: absolute;
+  top: 0;           /* tepat di atas child-drop */
+  height: var(--line-w);
+  background: var(--line-color);
+  /* left dan width diset oleh fixHBars() di JS */
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ═══════════════════════════════
