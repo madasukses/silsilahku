@@ -173,8 +173,7 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
   spreadWrap.className = 'spread-wrap';
 
   const siblingsRow = document.createElement('div');
-  // > 1 anak pakai class 'siblings-row has-hbar' agar CSS bisa gambar garis
-  siblingsRow.className = children.length > 1 ? 'siblings-row has-hbar' : 'siblings-row';
+  siblingsRow.className = 'siblings-row';
 
   children.forEach(child => {
     const col = document.createElement('div');
@@ -187,9 +186,50 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
     siblingsRow.appendChild(col);
   });
 
+  if (children.length > 1) {
+    // h-bar digambar SETELAH mount via JS agar posisi tepat di center avatar
+    const hBar = document.createElement('div');
+    hBar.className = 'h-bar-js';
+    spreadWrap.appendChild(hBar);
+    // Simpan referensi untuk diukur setelah DOM render
+    spreadWrap._hBar = hBar;
+    spreadWrap._siblingsRow = siblingsRow;
+  }
+
   spreadWrap.appendChild(siblingsRow);
   block.appendChild(spreadWrap);
   return block;
+}
+
+/* ── Fix h-bar positions after DOM is rendered ──
+   Mengukur posisi center avatar dari child-col pertama dan terakhir,
+   lalu set h-bar.style left/right secara presisi.
+   Ini menghindari h-bar melampaui avatar karena couple-row lebih lebar.
+── */
+function fixHBars(container) {
+  const spreadWraps = container.querySelectorAll('.spread-wrap');
+  spreadWraps.forEach(sw => {
+    if (!sw._hBar || !sw._siblingsRow) return;
+    const cols = sw._siblingsRow.querySelectorAll(':scope > .child-col');
+    if (cols.length < 2) return;
+
+    // Avatar pertama (child-col pertama → .node-ava pertama di dalamnya)
+    const firstAva = cols[0].querySelector('.node-ava');
+    const lastAva  = cols[cols.length - 1].querySelector('.node-ava');
+    if (!firstAva || !lastAva) return;
+
+    const swRect    = sw.getBoundingClientRect();
+    const firstRect = firstAva.getBoundingClientRect();
+    const lastRect  = lastAva.getBoundingClientRect();
+
+    // Center x dari masing-masing avatar relatif terhadap spreadWrap
+    const leftCenter  = firstRect.left + firstRect.width / 2 - swRect.left;
+    const rightCenter = lastRect.left  + lastRect.width  / 2 - swRect.left;
+
+    const hBar = sw._hBar;
+    hBar.style.left  = leftCenter + 'px';
+    hBar.style.width = (rightCenter - leftCenter) + 'px';
+  });
 }
 
 /* ── Render ── */
@@ -211,5 +251,12 @@ async function renderTree(containerId, onClickFn) {
     if (drawn.has(rp.id)) return;
     const block = buildFamilyBlock(rp, drawn, ALL_MEMBERS, onClickFn);
     if (block) container.appendChild(block);
+  });
+
+  // Ukur posisi avatar setelah DOM selesai di-render
+  requestAnimationFrame(() => {
+    fixHBars(container);
+    // Re-fix saat window resize (rotasi layar di HP)
+    window.addEventListener('resize', () => fixHBars(container), { passive: true });
   });
 }
