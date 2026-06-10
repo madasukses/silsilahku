@@ -144,7 +144,7 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
 
   // Children container
   const childrenWrap = document.createElement('div');
-  childrenWrap.className = children.length === 1 ? 'children-wrap single' : 'children-wrap';
+  childrenWrap.className = children.length > 1 ? 'children-wrap multi' : 'children-wrap';
 
   children.forEach(child => {
     const col = document.createElement('div');
