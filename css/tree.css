@@ -1,20 +1,23 @@
 /* ============================================================
-   SilsilahKu — Tree Styles v5
-   Garis menempel tepat ke lingkaran avatar, center, mobile-friendly
+   SilsilahKu — Tree CSS v6
+   CSS-pure h-bar: semua child-col lebar sama = --cell
+   H-bar margin = cell/2 kiri & kanan → tepat di center avatar
    ============================================================ */
 
 :root {
-  --ava: 54px;
-  --ava-half: 27px;
-  --line-w: 3px;
-  --line-color: #1E1810;
+  --ava:       54px;
+  --cell:      80px;   /* lebar tetap setiap child-col */
+  --gap:       16px;   /* jarak antar cell */
+  --line-w:    3px;
+  --line-clr:  #1E1810;
+  --line-h:    22px;   /* tinggi v-conn dan child-drop */
 }
 
 /* ── Viewport ── */
 .tree-vp {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 24px 16px 60px;
+  padding: 24px 20px 60px;
   background: var(--ivory);
   min-height: 300px;
 }
@@ -22,100 +25,128 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: max-content;  /* scroll horizontal jika perlu */
-  margin: 0 auto;
+  width: fit-content;
+  min-width: 100%;
 }
 
-/* ── FAMILY BLOCK — selalu center ── */
+/* ── FAMILY BLOCK ── */
 .family-block {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* lebar family-block ditentukan oleh children-wrap di bawah */
 }
 
-/* ── COUPLE ROW ── */
-.couple-row {
-  display: flex;
-  align-items: flex-start; /* rata atas agar garis sejajar dengan puncak avatar */
-  gap: 0;
-}
-
-/*
-   Garis horizontal pasangan.
-   margin-top = radius avatar (--ava-half) - (line-w/2) agar garis
-   tepat di TENGAH avatar secara vertikal.
-   27 - 1.5 ≈ 26px dari atas node.
-*/
-.couple-hline {
-  width: 14px;
-  height: var(--line-w);
-  background: var(--line-color);
-  flex-shrink: 0;
-  margin-top: calc(var(--ava-half) - 1px); /* sejajar tengah avatar */
-}
-
-/* ── GARIS VERTIKAL dari bawah avatar inti ke anak ── */
-.v-conn {
-  width: var(--line-w);
-  height: 24px;
-  background: var(--line-color);
-  /* margin-top: 0 — langsung di bawah avatar (tidak ada gap) */
-}
-
-/* ── SIBLINGS ROW ── */
-.siblings-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-.child-col {
+/* ══════════════════════════════════════════
+   COUPLE WRAP
+   Lebar = var(--cell).
+   Avatar inti selalu center di dalam cell.
+   Pasangan ada di luar cell (tidak mengubah lebar).
+══════════════════════════════════════════ */
+.couple-wrap {
+  width: var(--cell);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 10px;
-}
-.child-drop {
-  width: var(--line-w);
-  height: 24px;
-  background: var(--line-color);
+  position: relative;   /* anchor untuk spouse-wrap */
 }
 
-/* ── H-bar via JS — ada di dalam siblings-row ── */
-.spread-wrap {
+/* Pasangan: absolute ke kanan, tidak mengubah lebar couple-wrap */
+.spouse-wrap {
+  position: absolute;
+  left: 100%;           /* mulai dari tepi kanan cell */
+  top: 0;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
+  gap: 0;
+  pointer-events: auto;
 }
-/* siblings-row pakai position:relative (diset inline JS saat has children) */
-.h-bar-js {
+
+/* Garis horizontal ke pasangan — sejajar tengah avatar */
+.couple-hline {
+  width: 14px;
+  height: var(--line-w);
+  background: var(--line-clr);
+  margin-top: calc(var(--ava)/2 - var(--line-w)/2);  /* tepat tengah avatar */
+  flex-shrink: 0;
+}
+
+/* ── V-CONN: garis vertikal dari bawah avatar ── */
+.v-conn {
+  width: var(--line-w);
+  height: var(--line-h);
+  background: var(--line-clr);
+}
+
+/* ══════════════════════════════════════════
+   CHILDREN WRAP + H-BAR
+
+   children-wrap = flex row dari semua child-col.
+   H-bar via ::before:
+     left  = calc(var(--cell)/2)               ← center cell pertama
+     right = calc(var(--cell)/2)               ← center cell terakhir
+   Karena semua cell lebar sama, ini SELALU tepat.
+══════════════════════════════════════════ */
+.children-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+}
+
+/* H-bar: mulai dan berakhir tepat di center cell pertama & terakhir */
+.children-wrap::before {
+  content: '';
   position: absolute;
   top: 0;
+  /* center cell pertama dari kiri */
+  left: calc(var(--cell)/2);
+  /* center cell terakhir dari kanan */
+  right: calc(var(--cell)/2);
   height: var(--line-w);
-  background: var(--line-color);
-  pointer-events: none;
-  z-index: 1;
-  /* left & width diset oleh fixHBars() */
+  background: var(--line-clr);
+  /* Hanya tampil jika ada > 1 anak */
 }
 
-/* ═══════════════════════════════
+/* Sembunyikan h-bar jika hanya 1 anak */
+.children-wrap.single::before {
+  display: none;
+}
+
+/* ── CHILD COL ── */
+.child-col {
+  width: var(--cell);        /* LEBAR TETAP = --cell */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Jarak antar saudara pakai margin */
+  margin: 0 calc(var(--gap)/2);
+}
+
+/* Drop line dari h-bar ke avatar anak */
+.child-drop {
+  width: var(--line-w);
+  height: var(--line-h);
+  background: var(--line-clr);
+}
+
+/* ══════════════════════════════════════════
    NODE
-═══════════════════════════════ */
+══════════════════════════════════════════ */
 .node {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
   cursor: pointer;
-  width: 72px;
+  width: var(--cell);
 }
-
-/* Avatar */
 .node-ava {
-  width: var(--ava);
-  height: var(--ava);
+  width: var(--ava); height: var(--ava);
   border-radius: 50%;
   background: var(--parch);
-  border: var(--line-w) solid var(--line-color);
+  border: var(--line-w) solid var(--line-clr);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Playfair Display', serif;
   font-size: 18px; font-weight: 700; color: var(--sepia-dk);
@@ -124,16 +155,12 @@
   box-shadow: 0 2px 8px rgba(30,24,16,0.12);
   flex-shrink: 0;
 }
-.node-ava img {
-  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-}
-.node:hover .node-ava,
-.node:active .node-ava {
+.node-ava img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.node:hover .node-ava, .node:active .node-ava {
   transform: scale(1.08);
   box-shadow: 0 4px 14px rgba(30,24,16,0.2);
 }
-
-/* Menantu — border putus abu, PRIORITAS di atas almarhum */
+/* Menantu — dashed abu, PRIORITAS di atas almarhum */
 .node.inlaw .node-ava {
   border-style: dashed !important;
   border-width: 2.5px !important;
@@ -141,72 +168,36 @@
   background: rgba(237,228,212,0.45);
   color: var(--muted);
 }
-/* Almarhum NON-menantu — border rose solid */
+/* Almarhum non-menantu */
 .node.dec:not(.inlaw) .node-ava {
   border-color: var(--rose);
   border-style: solid;
   border-width: var(--line-w);
 }
+.node-rose { position:absolute; bottom:-1px; right:-1px; font-size:13px; line-height:1; }
+.node-name { font-size:10px; font-weight:700; color:var(--ink); text-align:center; line-height:1.3; max-width:var(--cell); word-break:break-word; }
+.node-order { font-size:8px; font-weight:700; color:#fff; background:var(--ink); border-radius:5px; padding:1px 5px; text-align:center; }
+.node-year  { font-size:9px; color:var(--muted); text-align:center; }
+.inlaw-pill { font-size:8px; font-weight:600; color:var(--muted); border:1px dashed var(--muted); border-radius:5px; padding:1px 5px; }
 
-.node-rose {
-  position: absolute; bottom: -1px; right: -1px;
-  font-size: 13px; line-height: 1;
-}
-
-/* Nama */
-.node-name {
-  font-size: 10px; font-weight: 700; color: var(--ink);
-  text-align: center; line-height: 1.3;
-  max-width: 72px; word-break: break-word;
-}
-/* Anak ke- badge */
-.node-order {
-  font-size: 8px; font-weight: 700;
-  color: #fff;
-  background: var(--ink);
-  border-radius: 5px;
-  padding: 1px 5px;
-  text-align: center;
-}
-/* Tahun */
-.node-year {
-  font-size: 9px; color: var(--muted);
-  text-align: center;
-}
-/* Menantu label */
-.inlaw-pill {
-  font-size: 8px; font-weight: 600; color: var(--muted);
-  border: 1px dashed var(--muted);
-  border-radius: 5px; padding: 1px 5px;
-}
-
-/* ═══════════════════════════════
-   LEGEND
-═══════════════════════════════ */
+/* ── LEGEND ── */
 .tree-legend {
-  display: flex; flex-wrap: wrap; gap: 12px;
-  padding: 14px 18px;
-  background: var(--white);
-  border-top: 1px solid var(--line);
+  display:flex; flex-wrap:wrap; gap:12px;
+  padding:14px 18px; background:var(--white);
+  border-top:1px solid var(--line);
 }
 .leg { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--ink-soft); }
-.lc { width:22px; height:22px; border-radius:50%; background:var(--parch); flex-shrink:0; }
+.lc  { width:22px; height:22px; border-radius:50%; background:var(--parch); flex-shrink:0; }
 .lc.s { border:3px solid var(--ink); }
 .lc.d { border:2.5px dashed var(--muted); }
 .lc.r { border:3px solid var(--rose); }
 .leg-line { width:28px; height:3px; background:var(--ink); }
 
-/* ═══════════════════════════════
-   MOBILE
-═══════════════════════════════ */
+/* ── MOBILE ── */
 @media (max-width: 480px) {
-  :root { --ava: 46px; --ava-half: 23px; }
-  .node { width: 60px; }
-  .node-ava { font-size: 15px; }
-  .node-name { font-size: 9px; max-width: 60px; }
-  .child-col { padding: 0 6px; }
-  .couple-hline { width: 10px; }
-  .v-conn { height: 18px; }
-  .child-drop { height: 18px; }
-  .tree-vp { padding: 16px 8px 48px; }
+  :root { --ava:44px; --cell:64px; --gap:10px; --line-h:18px; }
+  .node-ava { font-size:14px; }
+  .node-name { font-size:9px; }
+  .couple-hline { width:10px; }
+  .tree-vp { padding:16px 10px 48px; }
 }
