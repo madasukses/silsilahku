@@ -172,14 +172,9 @@ function buildFamilyBlock(person, drawn, members, onClickFn) {
   const spreadWrap = document.createElement('div');
   spreadWrap.className = 'spread-wrap';
 
-  if (children.length > 1) {
-    const hBar = document.createElement('div');
-    hBar.className = 'h-bar';
-    spreadWrap.appendChild(hBar);
-  }
-
   const siblingsRow = document.createElement('div');
-  siblingsRow.className = 'siblings-row';
+  // > 1 anak pakai class 'siblings-row has-hbar' agar CSS bisa gambar garis
+  siblingsRow.className = children.length > 1 ? 'siblings-row has-hbar' : 'siblings-row';
 
   children.forEach(child => {
     const col = document.createElement('div');
