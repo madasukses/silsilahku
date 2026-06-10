@@ -210,21 +210,33 @@ function fixHBars(container) {
   const spreadWraps = container.querySelectorAll('.spread-wrap');
   spreadWraps.forEach(sw => {
     if (!sw._hBar || !sw._siblingsRow) return;
-    const cols = sw._siblingsRow.querySelectorAll(':scope > .child-col');
+    const cols = Array.from(sw._siblingsRow.querySelectorAll(':scope > .child-col'));
     if (cols.length < 2) return;
 
-    // Avatar pertama (child-col pertama → .node-ava pertama di dalamnya)
-    const firstAva = cols[0].querySelector('.node-ava');
-    const lastAva  = cols[cols.length - 1].querySelector('.node-ava');
+    // Ambil avatar INTI (pertama dalam child-drop → node → node-ava)
+    // Setiap child-col: child-drop lalu family-block → couple-row → node pertama (inti) → node-ava
+    function getCoreAva(col) {
+      // node pertama di dalam col (bukan pasangan/menantu)
+      const nodes = col.querySelectorAll('.node');
+      for (const nd of nodes) {
+        const ava = nd.querySelector('.node-ava');
+        if (ava) return ava;
+      }
+      return col.querySelector('.node-ava');
+    }
+
+    const firstAva = getCoreAva(cols[0]);
+    const lastAva  = getCoreAva(cols[cols.length - 1]);
     if (!firstAva || !lastAva) return;
 
     const swRect    = sw.getBoundingClientRect();
     const firstRect = firstAva.getBoundingClientRect();
     const lastRect  = lastAva.getBoundingClientRect();
 
-    // Center x dari masing-masing avatar relatif terhadap spreadWrap
     const leftCenter  = firstRect.left + firstRect.width / 2 - swRect.left;
     const rightCenter = lastRect.left  + lastRect.width  / 2 - swRect.left;
+
+    if (rightCenter <= leftCenter) return; // belum ter-layout, skip
 
     const hBar = sw._hBar;
     hBar.style.left  = leftCenter + 'px';
@@ -253,10 +265,16 @@ async function renderTree(containerId, onClickFn) {
     if (block) container.appendChild(block);
   });
 
-  // Ukur posisi avatar setelah DOM selesai di-render
-  requestAnimationFrame(() => {
-    fixHBars(container);
-    // Re-fix saat window resize (rotasi layar di HP)
-    window.addEventListener('resize', () => fixHBars(container), { passive: true });
-  });
+  // Ukur posisi h-bar setelah layout selesai sepenuhnya
+  // 1) double rAF untuk layout awal
+  // 2) setTimeout 100ms sebagai fallback untuk tree yang dalam
+  // 3) resize untuk rotasi layar / zoom
+  function doFix() { fixHBars(container); }
+
+  requestAnimationFrame(() => requestAnimationFrame(doFix));
+  setTimeout(doFix, 150);
+
+  window.addEventListener('resize', () => {
+    requestAnimationFrame(doFix);
+  }, { passive: true });
 }
