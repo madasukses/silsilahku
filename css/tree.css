@@ -130,16 +130,16 @@
   box-shadow: 0 4px 14px rgba(30,24,16,0.2);
 }
 
-/* Menantu — border putus abu */
+/* Menantu — border putus abu, PRIORITAS di atas almarhum */
 .node.inlaw .node-ava {
-  border-style: dashed;
-  border-width: 2.5px;
-  border-color: var(--muted);
+  border-style: dashed !important;
+  border-width: 2.5px !important;
+  border-color: var(--muted) !important;
   background: rgba(237,228,212,0.45);
   color: var(--muted);
 }
-/* Almarhum — border rose */
-.node.dec .node-ava {
+/* Almarhum NON-menantu — border rose solid */
+.node.dec:not(.inlaw) .node-ava {
   border-color: var(--rose);
   border-style: solid;
   border-width: var(--line-w);
