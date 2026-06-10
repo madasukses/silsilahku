@@ -213,16 +213,17 @@ function fixHBars(container) {
     const cols = Array.from(sw._siblingsRow.querySelectorAll(':scope > .child-col'));
     if (cols.length < 2) return;
 
-    // Ambil avatar INTI (pertama dalam child-drop → node → node-ava)
-    // Setiap child-col: child-drop lalu family-block → couple-row → node pertama (inti) → node-ava
+    // Ambil avatar inti LANGSUNG di child-col ini (bukan dari cucu/level bawah)
+    // Struktur: child-col > child-drop + family-block > couple-row > node:first-child > node-ava
     function getCoreAva(col) {
-      // node pertama di dalam col (bukan pasangan/menantu)
-      const nodes = col.querySelectorAll('.node');
-      for (const nd of nodes) {
-        const ava = nd.querySelector('.node-ava');
-        if (ava) return ava;
-      }
-      return col.querySelector('.node-ava');
+      const fb = col.querySelector(':scope > .family-block');
+      if (!fb) return col.querySelector('.node-ava');
+      const coupleRow = fb.querySelector(':scope > .couple-row');
+      if (!coupleRow) return fb.querySelector('.node-ava');
+      // Node pertama di couple-row = anggota inti (bukan menantu)
+      const firstNode = coupleRow.querySelector(':scope > .node');
+      if (!firstNode) return coupleRow.querySelector('.node-ava');
+      return firstNode.querySelector('.node-ava');
     }
 
     const firstAva = getCoreAva(cols[0]);
