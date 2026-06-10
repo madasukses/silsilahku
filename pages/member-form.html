@@ -7,6 +7,47 @@
 <link rel="stylesheet" href="../css/global.css">
 <link rel="stylesheet" href="../css/admin.css">
 <style>
+/* ── Searchable Select ── */
+.ss-wrap {
+  position: relative;
+}
+.ss-input {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid var(--parch2);
+  border-radius: 9px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  color: var(--ink); background: var(--ivory);
+  outline: none; transition: border-color 0.2s;
+  cursor: text;
+}
+.ss-input:focus { border-color: var(--sepia); background: #fff; }
+.ss-input.has-value { background: #fff; border-color: var(--sepia); font-weight: 600; }
+
+.ss-dropdown {
+  display: none;
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--white);
+  border: 1.5px solid var(--sepia);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(30,24,16,0.14);
+  z-index: 100;
+  max-height: 220px; overflow-y: auto;
+  scrollbar-width: thin;
+}
+.ss-dropdown.open { display: block; }
+.ss-option {
+  padding: 10px 13px; font-size: 13px; cursor: pointer;
+  color: var(--ink); transition: background 0.12s;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 8px;
+}
+.ss-option:last-child { border-bottom: none; }
+.ss-option:hover, .ss-option.active { background: var(--parch); }
+.ss-option.clear { color: var(--muted); font-style: italic; }
+.ss-option .ss-gen { font-size: 10px; color: var(--muted); margin-left: auto; }
+.ss-empty { padding: 12px 13px; font-size: 13px; color: var(--muted); text-align: center; }
+</style>
+<style>
   .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 22px 40px; }
   .form-col  { display:flex; flex-direction:column; gap:14px; }
   .ava-area  {
@@ -137,29 +178,29 @@
           <div class="card-head">Data Keluarga</div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:13px;">
             <div class="fg"><label>Ayah</label>
-              <select id="fFather"><option value="">— Tidak ada / Tidak diketahui —</option></select>
+              <div class="ss-wrap" id="ssFather">
+                <input class="ss-input" type="text" placeholder="Cari nama ayah..." autocomplete="off">
+                <input type="hidden" id="fFather">
+                <div class="ss-dropdown"></div>
+              </div>
             </div>
             <div class="fg"><label>Ibu</label>
-              <select id="fMother"><option value="">— Tidak ada / Tidak diketahui —</option></select>
+              <div class="ss-wrap" id="ssMother">
+                <input class="ss-input" type="text" placeholder="Cari nama ibu..." autocomplete="off">
+                <input type="hidden" id="fMother">
+                <div class="ss-dropdown"></div>
+              </div>
             </div>
             <div class="fg"><label>Pasangan (Suami / Istri)</label>
-              <select id="fSpouse"><option value="">— Tidak ada / Belum menikah —</option></select>
-            </div>
-            <div class="fg"><label>Anak ke- (urutan)</label>
-                <select id="fChildOrder">
-                  <option value="">— Tidak diketahui —</option>
-                  <option value="1">Anak ke-1</option>
-                  <option value="2">Anak ke-2</option>
-                  <option value="3">Anak ke-3</option>
-                  <option value="4">Anak ke-4</option>
-                  <option value="5">Anak ke-5</option>
-                  <option value="6">Anak ke-6</option>
-                  <option value="7">Anak ke-7</option>
-                  <option value="8">Anak ke-8</option>
-                  <option value="9">Anak ke-9</option>
-                  <option value="10">Anak ke-10</option>
-                </select>
+              <div class="ss-wrap" id="ssSpouse">
+                <input class="ss-input" type="text" placeholder="Cari nama pasangan..." autocomplete="off">
+                <input type="hidden" id="fSpouse">
+                <div class="ss-dropdown"></div>
               </div>
+            </div>
+            <div class="fg"><label>Anak ke- (urutan, opsional)</label>
+              <input type="number" id="fChildOrder" min="1" max="20" placeholder="Contoh: 1, 2, 3 ...">
+            </div>
             <div class="tgl-row">
               <div class="tl">
                 <div>
@@ -272,21 +313,79 @@ async function handleAvaChange(input) {
   showToast('✓ Foto berhasil diupload');
 }
 
+/* ── Searchable Select ── */
+function initSearchableSelect(wrapId, hiddenId, options, placeholder) {
+  const wrap   = document.getElementById(wrapId);
+  const input  = wrap.querySelector('.ss-input');
+  const hidden = document.getElementById(hiddenId);
+  const drop   = wrap.querySelector('.ss-dropdown');
+  input.placeholder = placeholder || 'Cari...';
+
+  function renderOptions(filter) {
+    const q = (filter || '').toLowerCase();
+    const filtered = options.filter(o => !q || o.label.toLowerCase().includes(q));
+    drop.innerHTML = '';
+    // Opsi kosong
+    const clearOpt = document.createElement('div');
+    clearOpt.className = 'ss-option clear';
+    clearOpt.textContent = '— Tidak ada / Tidak diketahui —';
+    clearOpt.addEventListener('mousedown', e => {
+      e.preventDefault();
+      hidden.value = ''; input.value = '';
+      input.classList.remove('has-value');
+      drop.classList.remove('open');
+    });
+    drop.appendChild(clearOpt);
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ss-empty'; empty.textContent = 'Tidak ditemukan';
+      drop.appendChild(empty); return;
+    }
+    filtered.forEach(o => {
+      const el = document.createElement('div');
+      el.className = 'ss-option';
+      el.innerHTML = `<span>${o.label}</span><span class="ss-gen">Gen ${o.gen}</span>`;
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        hidden.value = o.value; input.value = o.label;
+        input.classList.add('has-value');
+        drop.classList.remove('open');
+      });
+      drop.appendChild(el);
+    });
+  }
+
+  input.addEventListener('focus', () => { renderOptions(input.value); drop.classList.add('open'); });
+  input.addEventListener('input', () => {
+    renderOptions(input.value); drop.classList.add('open');
+    if (!input.value) { hidden.value = ''; input.classList.remove('has-value'); }
+  });
+  input.addEventListener('blur', () => { setTimeout(() => drop.classList.remove('open'), 150); });
+
+  wrap._setValue = (val, label) => {
+    hidden.value = val || ''; input.value = label || '';
+    if (val) input.classList.add('has-value'); else input.classList.remove('has-value');
+  };
+  wrap._getValue = () => hidden.value;
+}
+
 async function loadMemberOptions() {
-  const { data } = await _db.from('members').select('id, name, generation, gender').order('generation').order('name');
+  const { data } = await window._db
+    .from('members')
+    .select('id, name, nickname, generation, gender')
+    .order('generation').order('name');
   allMembers = data || [];
 
-  const toOption = (m) => `<option value="${m.id}">${m.name} (Gen ${m.generation})</option>`;
-  const maleOpts   = allMembers.filter(m => m.gender === 'male').map(toOption).join('');
-  const femaleOpts = allMembers.filter(m => m.gender === 'female').map(toOption).join('');
-  const allOpts    = allMembers.map(toOption).join('');
+  const toOpt = m => ({
+    value: m.id,
+    label: m.name + (m.nickname ? ` (${m.nickname})` : ''),
+    gen: m.generation,
+  });
+  const allOpts = allMembers.map(toOpt);
 
-  document.getElementById('fFather').innerHTML =
-    `<option value="">— Tidak ada —</option>` + (maleOpts || allOpts);
-  document.getElementById('fMother').innerHTML =
-    `<option value="">— Tidak ada —</option>` + (femaleOpts || allOpts);
-  document.getElementById('fSpouse').innerHTML =
-    `<option value="">— Tidak ada / Belum menikah —</option>` + allOpts;
+  initSearchableSelect('ssFather', 'fFather', allOpts, 'Cari nama ayah...');
+  initSearchableSelect('ssMother', 'fMother', allOpts, 'Cari nama ibu...');
+  initSearchableSelect('ssSpouse', 'fSpouse', allOpts, 'Cari nama pasangan...');
 }
 
 async function loadExisting(id) {
@@ -306,9 +405,19 @@ async function loadExisting(id) {
   document.getElementById('fJob').value       = data.job || '';
   document.getElementById('fAddress').value   = data.address || '';
   document.getElementById('fNotes').value     = data.notes || '';
-  document.getElementById('fFather').value    = data.father_id || '';
-  document.getElementById('fMother').value    = data.mother_id || '';
-  document.getElementById('fSpouse').value    = data.spouse_id || '';
+  // Searchable select — set nilai + label nama
+  if (data.father_id) {
+    const fa = allMembers.find(m => m.id === data.father_id);
+    document.getElementById('ssFather')._setValue(data.father_id, fa ? fa.name : '');
+  }
+  if (data.mother_id) {
+    const mo = allMembers.find(m => m.id === data.mother_id);
+    document.getElementById('ssMother')._setValue(data.mother_id, mo ? mo.name : '');
+  }
+  if (data.spouse_id) {
+    const sp = allMembers.find(m => m.id === data.spouse_id);
+    document.getElementById('ssSpouse')._setValue(data.spouse_id, sp ? sp.name : '');
+  }
   document.getElementById('fChildOrder').value = data.child_order || '';
 
   if (data.is_inlaw) document.getElementById('tglInlaw').classList.add('on');
