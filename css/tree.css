@@ -80,21 +80,21 @@
   background: var(--line-color);
 }
 
-/* ── H-bar via JS (posisi diukur dari getBoundingClientRect) ── */
+/* ── H-bar via JS — ada di dalam siblings-row ── */
 .spread-wrap {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  position: relative; /* anchor untuk h-bar-js absolute */
 }
+/* siblings-row pakai position:relative (diset inline JS saat has children) */
 .h-bar-js {
   position: absolute;
-  top: 0;           /* tepat di atas child-drop */
+  top: 0;
   height: var(--line-w);
   background: var(--line-color);
-  /* left dan width diset oleh fixHBars() di JS */
   pointer-events: none;
   z-index: 1;
+  /* left & width diset oleh fixHBars() */
 }
 
 /* ═══════════════════════════════
